@@ -25,11 +25,7 @@ async function fetchIssues(jql, maxResults = 50) {
   });
 
   const text = await res.text();
-
-  if (!res.ok) {
-    throw new Error(`Jira ${res.status}: ${text}`);
-  }
-
+  if (!res.ok) throw new Error(`Jira ${res.status}: ${text}`);
   return JSON.parse(text);
 }
 
@@ -55,9 +51,11 @@ export default async function handler(req, res) {
       fetchIssues(RESOLVED_JQL),
     ]);
 
+    const openTotal = openData.total || 0;
+    const resolvedTotal = resolvedData.total || 0;
     const allIssues = [...(openData.issues || []), ...(resolvedData.issues || [])];
-    let high = 0, medium = 0, low = 0;
 
+    let high = 0, medium = 0, low = 0;
     allIssues.forEach((i) => {
       const p = (i.fields.priority?.name || '').toLowerCase();
       if (p === 'high' || p === 'highest') high++;
@@ -67,9 +65,20 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       fetchedAt: new Date().toISOString(),
-      metrics: { total: (openData.total || 0) + (resolvedData.total || 0), high, medium, low },
-      open: { total: openData.total || 0, issues: openData.issues || [] },
-      resolved: { total: resolvedData.total || 0, issues: resolvedData.issues || [] },
+      metrics: {
+        total: openTotal + resolvedTotal,
+        high,
+        medium,
+        low,
+      },
+      open: {
+        total: openTotal,
+        issues: openData.issues || [],
+      },
+      resolved: {
+        total: resolvedTotal,
+        issues: resolvedData.issues || [],
+      },
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
