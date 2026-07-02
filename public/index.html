@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BH Bug Reporting — Homethrive</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f3;
+      color: #1a1a18;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e2;
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 28px;
+      height: 28px;
+      background: #1a1a18;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #1a1a18;
+    }
+
+    .topbar-subtitle {
+      font-size: 12px;
+      color: #888780;
+    }
+
+    .refresh-btn {
+      background: #fff;
+      border: 1px solid #d3d1c7;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #1a1a18;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .refresh-btn:hover { background: #f5f5f3; }
+    .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 2rem;
+    }
+
+    .metric {
+      background: #fff;
+      border: 1px solid #e5e5e2;
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: #888780;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 500;
+      color: #1a1a18;
+    }
+
+    .metric-value.high { color: #993c1d; }
+    .metric-value.medium { color: #854f0b; }
+    .metric-value.low { color: #3b6d11; }
+
+    .section { margin-bottom: 1.5rem; }
+
+    .table-card {
+      background: #fff;
+      border: 1px solid #e5e5e2;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #e5e5e2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-header-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a18;
+    }
+
+    .table-header-count {
+      font-size: 12px;
+      color: #888780;
+      background: #f5f5f3;
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 18px;
+      border-bottom: 1px solid #e5e5e2;
+      color: #888780;
+      font-weight: 500;
+      font-size: 12px;
+      background: #fafaf8;
+    }
+
+    td {
+      padding: 10px 18px;
+      border-bottom: 1px solid #f0f0ee;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafaf8; }
+
+    .ticket-key {
+      color: #185fa5;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .ticket-key:hover { text-decoration: underline; }
+
+    .summary-text {
+      max-width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .badge-rework       { background: #faeeda; color: #854f0b; }
+    .badge-ready-dev    { background: #e6f1fb; color: #185fa5; }
+    .badge-ready-qa     { background: #eaf3de; color: #3b6d11; }
+    .badge-released     { background: #eaf3de; color: #3b6d11; }
+    .badge-in-progress  { background: #eeedfe; color: #3c3489; }
+    .badge-default      { background: #f0f0ee; color: #5f5e5a; }
+
+    .priority-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .p-high   { background: #d85a30; }
+    .p-medium { background: #ba7517; }
+    .p-low    { background: #3b6d11; }
+    .p-none   { background: #d3d1c7; }
+
+    .parent-tag {
+      font-size: 11px;
+      color: #888780;
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
+    }
+
+    .table-footer {
+      padding: 10px 18px;
+      font-size: 12px;
+      color: #888780;
+      border-top: 1px solid #f0f0ee;
+    }
+
+    .state-row td {
+      text-align: center;
+      padding: 2rem;
+      color: #888780;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e5e5e2;
+      border-top-color: #185fa5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-text { color: #993c1d; }
+
+    .last-updated {
+      font-size: 12px;
+      color: #888780;
+    }
+
+    @media (max-width: 700px) {
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .container { padding: 1rem; }
+      .topbar { padding: 0 1rem; }
+      .summary-text { max-width: 160px; }
+      .parent-tag { display: none; }
+      th:last-child, td:last-child { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">HT</div>
+    <div>
+      <div class="topbar-title">BH Bug Reporting</div>
+      <div class="topbar-subtitle">Homethrive × BrightHorizons</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="last-updated" id="last-updated"></span>
+    <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+      Refresh
+    </button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="metric-grid">
+    <div class="metric">
+      <div class="metric-label">Total bugs</div>
+      <div class="metric-value" id="m-total">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Priority — High</div>
+      <div class="metric-value high" id="m-high">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Priority — Medium</div>
+      <div class="metric-value medium" id="m-medium">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Priority — Low</div>
+      <div class="metric-value low" id="m-low">—</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-header-title">Open bugs related to BH</span>
+        <span class="table-header-count" id="open-count">—</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:100px">Key</th>
+            <th>Summary</th>
+            <th style="width:40px">P</th>
+            <th style="width:130px">Status</th>
+            <th style="width:180px">Parent</th>
+          </tr>
+        </thead>
+        <tbody id="open-tbody">
+          <tr class="state-row"><td colspan="5"><span class="spinner"></span> Loading...</td></tr>
+        </tbody>
+      </table>
+      <div class="table-footer" id="open-footer"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-header-title">Resolved bugs related to BH</span>
+        <span class="table-header-count" id="resolved-count">—</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:100px">Key</th>
+            <th>Summary</th>
+            <th style="width:40px">P</th>
+            <th style="width:130px">Status</th>
+            <th style="width:180px">Parent</th>
+          </tr>
+        </thead>
+        <tbody id="resolved-tbody">
+          <tr class="state-row"><td colspan="5"><span class="spinner"></span> Loading...</td></tr>
+        </tbody>
+      </table>
+      <div class="table-footer" id="resolved-footer"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function statusBadge(status) {
+    const s = (status || '').toUpperCase();
+    if (s.includes('REWORK')) return `<span class="badge badge-rework">Rework</span>`;
+    if (s.includes('READY FOR DEV')) return `<span class="badge badge-ready-dev">Ready for dev</span>`;
+    if (s.includes('READY FOR QA')) return `<span class="badge badge-ready-qa">Ready for QA</span>`;
+    if (s.includes('RELEASED')) return `<span class="badge badge-released">Released</span>`;
+    if (s.includes('IN PROGRESS') || s.includes('IN-PROGRESS')) return `<span class="badge badge-in-progress">In progress</span>`;
+    return `<span class="badge badge-default">${status}</span>`;
+  }
+
+  function priorityDot(p) {
+    const n = (p || '').toLowerCase();
+    if (n === 'highest' || n === 'high') return `<span class="priority-dot p-high" title="High"></span>`;
+    if (n === 'medium') return `<span class="priority-dot p-medium" title="Medium"></span>`;
+    if (n === 'low' || n === 'lowest') return `<span class="priority-dot p-low" title="Low"></span>`;
+    return `<span class="priority-dot p-none" title="None"></span>`;
+  }
+
+  function renderRows(issues, tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    if (!issues || issues.length === 0) {
+      tbody.innerHTML = '<tr class="state-row"><td colspan="5">No issues found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = issues.map(issue => {
+      const f = issue.fields;
+      const key = issue.key;
+      const summary = f.summary || '';
+      const summaryShort = summary.length > 90 ? summary.substring(0, 90) + '…' : summary;
+      const status = f.status?.name || '';
+      const priority = f.priority?.name || '';
+      const parent = f.parent?.fields?.summary || '';
+      const parentShort = parent.length > 35 ? parent.substring(0, 35) + '…' : parent;
+      const url = `https://homethrive.atlassian.net/browse/${key}`;
+      return `<tr>
+        <td><a class="ticket-key" href="${url}" target="_blank" rel="noopener">${key}</a></td>
+        <td><span class="summary-text" title="${summary.replace(/"/g, "'")}">${summaryShort}</span></td>
+        <td>${priorityDot(priority)}</td>
+        <td>${statusBadge(status)}</td>
+        <td><span class="parent-tag" title="${parent}">${parentShort}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function loadData() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Loading...';
+
+    ['open-tbody', 'resolved-tbody'].forEach(id => {
+      document.getElementById(id).innerHTML =
+        '<tr class="state-row"><td colspan="5"><span class="spinner"></span> Loading...</td></tr>';
+    });
+
+    try {
+      const res = await fetch('/api/jira');
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+
+      document.getElementById('m-total').textContent = data.metrics.total;
+      document.getElementById('m-high').textContent = data.metrics.high;
+      document.getElementById('m-medium').textContent = data.metrics.medium;
+      document.getElementById('m-low').textContent = data.metrics.low;
+
+      renderRows(data.open.issues, 'open-tbody');
+      document.getElementById('open-count').textContent = `${data.open.total} issues`;
+      document.getElementById('open-footer').textContent =
+        `Showing ${data.open.issues.length} of ${data.open.total} issues`;
+
+      renderRows(data.resolved.issues, 'resolved-tbody');
+      document.getElementById('resolved-count').textContent = `${data.resolved.total} issues`;
+      document.getElementById('resolved-footer').textContent =
+        `Showing ${data.resolved.issues.length} of ${data.resolved.total} issues`;
+
+      const now = new Date().toLocaleString('en-US', {
+        month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+      document.getElementById('last-updated').textContent = `Updated ${now}`;
+
+    } catch (err) {
+      ['open-tbody', 'resolved-tbody'].forEach(id => {
+        document.getElementById(id).innerHTML =
+          '<tr class="state-row"><td colspan="5" class="error-text">Failed to load data. Please try refreshing.</td></tr>';
+      });
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Refresh`;
+    }
+  }
+
+  loadData();
+</script>
+</body>
+</html>
