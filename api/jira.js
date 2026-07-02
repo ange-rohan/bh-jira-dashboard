@@ -14,7 +14,7 @@ async function fetchIssues(jql, maxResults = 50) {
     fields: 'summary,status,priority,parent,customfield_10014',
   });
 
-  const url = `${BASE}/search?${params}`;
+  const url = `${BASE}/search/jql?${params}`;
   const auth = Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64');
 
   const res = await fetch(url, {
