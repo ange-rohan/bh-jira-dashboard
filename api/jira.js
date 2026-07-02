@@ -14,31 +14,39 @@ async function fetchIssues(jql, maxResults = 50) {
     fields: 'summary,status,priority,parent,customfield_10014',
   });
 
-  const res = await fetch(`${BASE}/search?${params}`, {
+  const url = `${BASE}/search?${params}`;
+  const auth = Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64');
+
+  const res = await fetch(url, {
     headers: {
-      Authorization: `Basic ${Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64')}`,
+      Authorization: `Basic ${auth}`,
       Accept: 'application/json',
     },
   });
 
+  const text = await res.text();
+
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Jira API error ${res.status}: ${text}`);
+    throw new Error(`Jira ${res.status}: ${text}`);
   }
 
-  return res.json();
+  return JSON.parse(text);
 }
 
 export default async function handler(req, res) {
-  // CORS — allow any origin since this is a public dashboard
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
-
-  // Cache for 5 minutes on CDN edge so BH gets fast loads
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
 
   if (!CLOUD_ID || !JIRA_TOKEN || !JIRA_EMAIL) {
-    return res.status(500).json({ error: 'Jira credentials not configured' });
+    return res.status(500).json({
+      error: 'Missing env vars',
+      missing: {
+        JIRA_CLOUD_ID: !CLOUD_ID,
+        JIRA_API_TOKEN: !JIRA_TOKEN,
+        JIRA_EMAIL: !JIRA_EMAIL,
+      },
+    });
   }
 
   try {
@@ -59,23 +67,11 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       fetchedAt: new Date().toISOString(),
-      metrics: {
-        total: (openData.total || 0) + (resolvedData.total || 0),
-        high,
-        medium,
-        low,
-      },
-      open: {
-        total: openData.total || 0,
-        issues: openData.issues || [],
-      },
-      resolved: {
-        total: resolvedData.total || 0,
-        issues: resolvedData.issues || [],
-      },
+      metrics: { total: (openData.total || 0) + (resolvedData.total || 0), high, medium, low },
+      open: { total: openData.total || 0, issues: openData.issues || [] },
+      resolved: { total: resolvedData.total || 0, issues: resolvedData.issues || [] },
     });
   } catch (err) {
-    console.error('Jira fetch error:', err);
-    return res.status(500).json({ error: 'Failed to fetch Jira data' });
+    return res.status(500).json({ error: err.message });
   }
 }
