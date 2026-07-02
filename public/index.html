@@ -16,13 +16,21 @@
     .refresh-btn:hover { background: #f5f5f3; }
     .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
-    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
-    .metric { background: #fff; border: 1px solid #e5e5e2; border-radius: 10px; padding: 1.25rem; }
-    .metric-label { font-size: 12px; color: #888780; margin-bottom: 6px; }
-    .metric-value { font-size: 32px; font-weight: 500; color: #1a1a18; }
-    .metric-value.high { color: #993c1d; }
-    .metric-value.medium { color: #854f0b; }
-    .metric-value.low { color: #3b6d11; }
+
+    .filter-counts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 2rem; }
+    .filter-card { background: #fff; border: 1px solid #e5e5e2; border-radius: 10px; overflow: hidden; }
+    .filter-card-header { padding: 12px 16px; border-bottom: 1px solid #e5e5e2; font-size: 13px; font-weight: 500; color: #1a1a18; }
+    .filter-card-header span { font-size: 12px; color: #888780; font-weight: 400; }
+    .filter-metrics { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .filter-metric { padding: 16px; border-right: 1px solid #f0f0ee; }
+    .filter-metric:last-child { border-right: none; }
+    .filter-metric-label { font-size: 11px; color: #888780; margin-bottom: 6px; }
+    .filter-metric-value { font-size: 28px; font-weight: 500; color: #1a1a18; }
+    .filter-metric-value.high { color: #993c1d; }
+    .filter-metric-value.medium { color: #854f0b; }
+    .filter-metric-value.low { color: #3b6d11; }
+    .filter-card-footer { padding: 8px 16px; border-top: 1px solid #f0f0ee; font-size: 11px; color: #888780; }
+
     .section { margin-bottom: 1.5rem; }
     .table-card { background: #fff; border: 1px solid #e5e5e2; border-radius: 10px; overflow: hidden; }
     .table-header { padding: 14px 18px; border-bottom: 1px solid #e5e5e2; display: flex; align-items: center; justify-content: space-between; }
@@ -56,12 +64,12 @@
     .error-text { color: #993c1d; }
     .last-updated { font-size: 12px; color: #888780; }
     @media (max-width: 700px) {
-      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .filter-counts-grid { grid-template-columns: 1fr; }
+      .filter-metrics { grid-template-columns: repeat(2, 1fr); }
       .container { padding: 1rem; }
       .topbar { padding: 0 1rem; }
       .summary-text { max-width: 160px; }
       .parent-tag { display: none; }
-      th:last-child, td:last-child { display: none; }
     }
   </style>
 </head>
@@ -84,25 +92,57 @@
 </div>
 
 <div class="container">
-  <div class="metric-grid">
-    <div class="metric">
-      <div class="metric-label">Total bugs</div>
-      <div class="metric-value" id="m-total">—</div>
+
+  <!-- Filter count cards -->
+  <div class="filter-counts-grid">
+    <div class="filter-card">
+      <div class="filter-card-header">Filter counts: BH Bug Reporting — Open Bugs Related to BH</div>
+      <div class="filter-metrics">
+        <div class="filter-metric">
+          <div class="filter-metric-label">Total</div>
+          <div class="filter-metric-value" id="open-m-total">—</div>
+        </div>
+        <div class="filter-metric">
+          <div class="filter-metric-label">Priority — High</div>
+          <div class="filter-metric-value high" id="open-m-high">—</div>
+        </div>
+        <div class="filter-metric">
+          <div class="filter-metric-label">Priority — Medium</div>
+          <div class="filter-metric-value medium" id="open-m-medium">—</div>
+        </div>
+        <div class="filter-metric">
+          <div class="filter-metric-label">Priority — Low</div>
+          <div class="filter-metric-value low" id="open-m-low">—</div>
+        </div>
+      </div>
+      <div class="filter-card-footer" id="open-refreshed">Last refreshed —</div>
     </div>
-    <div class="metric">
-      <div class="metric-label">Priority — High</div>
-      <div class="metric-value high" id="m-high">—</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Priority — Medium</div>
-      <div class="metric-value medium" id="m-medium">—</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Priority — Low</div>
-      <div class="metric-value low" id="m-low">—</div>
+
+    <div class="filter-card">
+      <div class="filter-card-header">Filter counts: BH Bug Reporting — Resolved Bugs Related to BH</div>
+      <div class="filter-metrics">
+        <div class="filter-metric">
+          <div class="filter-metric-label">Total</div>
+          <div class="filter-metric-value" id="resolved-m-total">—</div>
+        </div>
+        <div class="filter-metric">
+          <div class="filter-metric-label">Priority — High</div>
+          <div class="filter-metric-value high" id="resolved-m-high">—</div>
+        </div>
+        <div class="filter-metric">
+          <div class="filter-metric-label">Priority — Medium</div>
+          <div class="filter-metric-value medium" id="resolved-m-medium">—</div>
+        </div>
+        <div class="filter-metric">
+          <div class="filter-metric-label">Priority — Low</div>
+          <div class="filter-metric-value low" id="resolved-m-low">—</div>
+        </div>
+      </div>
+      <div class="filter-card-footer" id="resolved-refreshed">Last refreshed —</div>
     </div>
   </div>
 
+  <!-- Open bugs table -->
   <div class="section">
     <div class="table-card">
       <div class="table-header">
@@ -117,6 +157,7 @@
     </div>
   </div>
 
+  <!-- Resolved bugs table -->
   <div class="section">
     <div class="table-card">
       <div class="table-header">
@@ -130,6 +171,7 @@
       <div class="table-footer" id="resolved-footer"></div>
     </div>
   </div>
+
 </div>
 
 <script>
@@ -149,6 +191,17 @@
     if (n === 'medium') return `<span class="priority-dot p-medium" title="Medium"></span>`;
     if (n === 'low' || n === 'lowest') return `<span class="priority-dot p-low" title="Low"></span>`;
     return `<span class="priority-dot p-none" title="None"></span>`;
+  }
+
+  function countPriorities(issues) {
+    let high = 0, medium = 0, low = 0;
+    (issues || []).forEach(i => {
+      const p = (i.fields.priority?.name || '').toLowerCase();
+      if (p === 'high' || p === 'highest') high++;
+      else if (p === 'medium') medium++;
+      else if (p === 'low' || p === 'lowest') low++;
+    });
+    return { high, medium, low };
   }
 
   function renderRows(issues, tbodyId) {
@@ -190,24 +243,27 @@
       if (!res.ok) throw new Error(`${res.status}`);
       const data = await res.json();
 
-      // Fix: compute total from actual issue counts across both filters
       const openTotal = data.open.total || 0;
       const resolvedTotal = data.resolved.total || 0;
-      const allIssues = [...(data.open.issues || []), ...(data.resolved.issues || [])];
+      const openP = countPriorities(data.open.issues);
+      const resolvedP = countPriorities(data.resolved.issues);
+      const now = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-      let high = 0, medium = 0, low = 0;
-      allIssues.forEach(i => {
-        const p = (i.fields.priority?.name || '').toLowerCase();
-        if (p === 'high' || p === 'highest') high++;
-        else if (p === 'medium') medium++;
-        else if (p === 'low' || p === 'lowest') low++;
-      });
+      // Open filter counts
+      document.getElementById('open-m-total').textContent = openTotal;
+      document.getElementById('open-m-high').textContent = openP.high;
+      document.getElementById('open-m-medium').textContent = openP.medium;
+      document.getElementById('open-m-low').textContent = openP.low;
+      document.getElementById('open-refreshed').textContent = `Last refreshed ${now}`;
 
-      document.getElementById('m-total').textContent = openTotal + resolvedTotal;
-      document.getElementById('m-high').textContent = data.metrics.high;
-      document.getElementById('m-medium').textContent = data.metrics.medium;
-      document.getElementById('m-low').textContent = data.metrics.low;
+      // Resolved filter counts
+      document.getElementById('resolved-m-total').textContent = resolvedTotal;
+      document.getElementById('resolved-m-high').textContent = resolvedP.high;
+      document.getElementById('resolved-m-medium').textContent = resolvedP.medium;
+      document.getElementById('resolved-m-low').textContent = resolvedP.low;
+      document.getElementById('resolved-refreshed').textContent = `Last refreshed ${now}`;
 
+      // Tables
       renderRows(data.open.issues, 'open-tbody');
       document.getElementById('open-count').textContent = `${openTotal} issue${openTotal !== 1 ? 's' : ''}`;
       document.getElementById('open-footer').textContent = `Showing ${data.open.issues.length} of ${openTotal} issues`;
@@ -216,7 +272,6 @@
       document.getElementById('resolved-count').textContent = `${resolvedTotal} issue${resolvedTotal !== 1 ? 's' : ''}`;
       document.getElementById('resolved-footer').textContent = `Showing ${data.resolved.issues.length} of ${resolvedTotal} issues`;
 
-      const now = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       document.getElementById('last-updated').textContent = `Updated ${now}`;
 
     } catch (err) {
